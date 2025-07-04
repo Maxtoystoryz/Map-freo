@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TAFE Map with Labeled Buildings + Live Tracking</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #map { height: 100vh; }
+
+    .label-icon {
+      background-color: #0078ff;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 1px solid #fff;
+      box-shadow: 0 0 3px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
+
+    /* Style for the live tracking marker */
+    .live-location-marker {
+      background: rgba(255, 0, 0, 0.8);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    const map = L.map('map').setView([-32.055, 115.7435], 20); // Main campus area
+    map.options.minZoom = 18;
+    map.options.maxZoom = 23;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const buildings = [
+      { name: "ND48", coords: [-32.054211, 115.744601] },
+      { name: "ND49", coords: [-32.054025, 115.743894] },
+      { name: "ND50", coords: [-32.054300, 115.743997] },
+      { name: "Entry", coords: [-32.053928, 115.743659] },
+
+      { name: "ND46 ⚕️", coords: [-32.054379, 115.743572] },
+      { name: "ND40 ⚕️", coords: [-32.054394, 115.743368] },
+      { name: "ND37 ⚕️", coords: [-32.0549167, 115.74275] },
+      { name: "ND43 101 ⚕️", coords: [-32.054991, 115.743039] },
+
+      { name: "ND36 Gate ⛿", coords: [-32.054364, 115.743270] },
+      { name: "ND36 ⚖️", coords: [-32.054793, 115.743015] },
+
+      { name: "ND42", coords: [-32.055502, 115.742400] },
+      { name: "ND32", coords: [-32.055621, 115.742337] },
+      { name: "ND33", coords: [-32.055924, 115.742586] },
+      { name: "ND19", coords: [-32.055523, 115.742929] },
+      { name: "ND31", coords: [-32.055333, 115.743174] },
+
+      { name: "Enzo’s ✂️", coords: [-32.055433, 115.743197] },
+
+      { name: "ND28 Gate ⛿", coords: [-32.055337, 115.743285] },
+      { name: "ND23 Gate ⛿", coords: [-32.055786, 115.743283] },
+      { name: "ND23", coords: [-32.055786, 115.743283] },
+
+      { name: "ND1", coords: [-32.055995, 115.743470] },
+      { name: "ND2", coords: [-32.056298, 115.743458] },
+      { name: "ND3", coords: [-32.056561, 115.743707] },
+      { name: "ND4", coords: [-32.056852, 115.743023] },
+      { name: "ND6", coords: [-32.055877, 115.743509] },
+
+      { name: "ND24", coords: [-32.056766, 115.743560] },
+      { name: "ND25", coords: [-32.056862, 115.743836] },
+      { name: "ND22", coords: [-32.057232, 115.743791] },
+      { name: "Chapel ✝️", coords: [-32.056636, 115.743961] },
+
+      { name: "UP1 🅿️", coords: [-32.056888, 115.744055] },
+      { name: "UP2 🅿️", coords: [-32.057007, 115.743194] },
+      { name: "UP3 🅿️", coords: [-32.056646, 115.743212] },
+      { name: "UP4 🅿️", coords: [-32.055933, 115.742335] },
+      { name: "UP5 🅿️", coords: [-32.055860, 115.743190] },
+      { name: "UP7 🅿️", coords: [-32.054592, 115.743619] }
+    ];
+
+    buildings.forEach(building => {
+      const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${building.coords[0]},${building.coords[1]}`;
+
+      const labelIcon = L.divIcon({
+        className: 'label-icon',
+        html: building.name,
+        iconSize: [60, 20],
+        iconAnchor: [30, 10]
+      });
+
+      L.marker(building.coords, { icon: labelIcon })
+        .addTo(map)
+        .bindPopup(`<strong>${building.name}</strong><br><a href="${streetViewUrl}" target="_blank">📷 View Street View</a>`);
+    });
+
+    // Live tracking marker variable
+    let liveMarker = null;
+
+    // Custom icon for live location (red dot)
+    const liveLocationIcon = L.divIcon({
+      className: 'live-location-marker'
+    });
+
+    // Function to handle success of geolocation
+    function onLocationFound(e) {
+      const latlng = e.latlng;
+
+      if (!liveMarker) {
+        // Add the marker for the first time and center map there
+        liveMarker = L.marker(latlng, { icon: liveLocationIcon }).addTo(map)
+          .bindPopup("You are here").openPopup();
+        map.setView(latlng, 20);
+      } else {
+        // Update existing marker position
+        liveMarker.setLatLng(latlng);
+      }
+    }
+
+    // Function to handle location error
+    function onLocationError(e) {
+      alert("Could not get your location. Make sure location services are enabled.");
+    }
+
+    // Start watching location
+    map.locate({ watch: true, setView: false, maxZoom: 21 });
+
+    // Event listeners for location found and error
+    map.on('locationfound', onLocationFound);
+    map.on('locationerror', onLocationError);
+
+  </script>
+</body>
+</html>
