@@ -202,7 +202,7 @@
         if (!liveMarker) {
           liveMarker = L.marker(latlng, { icon: liveLocationIcon }).addTo(map)
             .bindPopup("You are here").openPopup();
-          map.setView(latlng, 20);
+          map.setView(latlng, 16);
         } else {
           liveMarker.setLatLng(latlng);
         }
