@@ -212,7 +212,7 @@
         alert("Could not get your location. Make sure location services are enabled.");
       }
 
-      map.locate({ watch: true, setView: false, maxZoom: 21 });
+      map.locate({ watch: true, setView: false, maxZoom: 18 });
       map.on('locationfound', onLocationFound);
       map.on('locationerror', onLocationError);
     }
