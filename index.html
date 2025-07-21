@@ -1,33 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TAFE Map with Password + Live Tracking + Selector</title>
+  <title>TAFE Map with Password + Live Tracking + Selector + Confetti</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
   <style>
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pulse-circle {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255, 0, 0, 0.6);
+      border: 3px solid red;
+      animation: pulse 3s infinite;
+      box-shadow: 0 0 8px 3px rgba(255,0,0,0.7);
+      pointer-events: none; user-select: none;
+    }
+
     html, body { height: 100%; margin: 0; }
     #map { height: 100vh; display: none; }
     .label-icon {
-      background-color: #0078ff;
-      color: white;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-      border: 1px solid #fff;
-      box-shadow: 0 0 3px rgba(0,0,0,0.5);
+      background-color: #0078ff; color: white; padding: 2px 6px;
+      border-radius: 4px; font-size: 12px; font-weight: bold;
+      border: 1px solid #fff; box-shadow: 0 0 3px rgba(0,0,0,0.5);
       white-space: nowrap;
     }
     .live-location-marker {
       background: rgba(255, 0, 0, 0.8);
-      border-radius: 50%;
-      width: 16px;
-      height: 16px;
+      border-radius: 50%; width: 16px; height: 16px;
       border: 2px solid white;
       box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
     }
+
     #passwordOverlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.75);
@@ -54,10 +66,35 @@
       font-size: 16px; padding: 5px;
       border-radius: 5px; border: 1px solid #ccc;
       text-align-last: center; display: none;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Confetti container */
+    #confettiContainer {
+      pointer-events: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 10000;
+      overflow: visible;
+      display: none;
+    }
+    .confetti {
+      position: absolute;
+      font-size: 24px;
+      animation-name: fall;
+      animation-timing-function: linear;
+      animation-iteration-count: 1;
+      opacity: 0.9;
+      user-select: none;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-30px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
     }
   </style>
 </head>
 <body>
+
   <div id="passwordOverlay">
     <div>Please enter password to access the map:</div>
     <input type="password" id="passwordInput" placeholder="Password" />
@@ -70,6 +107,7 @@
   </select>
 
   <div id="map"></div>
+  <div id="confettiContainer"></div>
 
   <script>
     const correctPassword = "lesgo2025";
@@ -80,14 +118,19 @@
     const passwordError = document.getElementById('passwordError');
     const mapDiv = document.getElementById('map');
     const buildingSelect = document.getElementById('buildingSelect');
+    const confettiContainer = document.getElementById('confettiContainer');
 
     passwordBtn.addEventListener('click', () => {
       const entered = passwordInput.value;
       if (entered === correctPassword) {
-        passwordOverlay.style.display = 'none';
-        mapDiv.style.display = 'block';
-        buildingSelect.style.display = 'block';
-        initializeMap();
+        launchConfetti();
+        setTimeout(() => {
+          confettiContainer.style.display = 'none';
+          passwordOverlay.style.display = 'none';
+          mapDiv.style.display = 'block';
+          buildingSelect.style.display = 'block';
+          initializeMap();
+        }, 3000); // Show confetti for 3 seconds before showing map
       } else {
         passwordError.textContent = "Incorrect password, please try again.";
         passwordInput.value = "";
@@ -98,6 +141,28 @@
     passwordInput.addEventListener('keyup', (e) => {
       if (e.key === 'Enter') passwordBtn.click();
     });
+
+    function launchConfetti() {
+      confettiContainer.style.display = 'block';
+      for(let i = 0; i < 150; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        confetti.style.fontSize = (Math.random() * 20 + 10) + 'px';
+
+        // Choose a confetti emoji randomly
+        const confettiEmojis = ['🎉', '✨', '🎊', '🥳', '🎈', '💥'];
+        confetti.textContent = confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)];
+
+        confettiContainer.appendChild(confetti);
+
+        // Remove confetti after animation finishes
+        confetti.addEventListener('animationend', () => {
+          confetti.remove();
+        });
+      }
+    }
 
     function initializeMap() {
       const map = L.map('map').setView([-32.055, 115.7435], 16);
@@ -143,65 +208,132 @@
         { name: "UP4 🅿️", coords: [-32.055933, 115.742335] },
         { name: "UP5 🅿️", coords: [-32.055860, 115.743190] },
         { name: "UP7 🅿️", coords: [-32.054592, 115.743619] },
-        { name: "Batman Courtyard 🦇", coords: [-32.056481, 115.744092] },
+        { name: "Bateman Courtyard 🦇", coords: [-32.056481, 115.744092] },
         { name: "ND9", coords: [-32.056670, 115.744142] },
         { name: "ND10 Bathrooms 🚻", coords: [-32.056520, 115.744188] },
-        { name: "ND11", coords: [-32.056571, 115.744268] },
-        { name: "ND13", coords: [-32.056511, 115.744393] },
-        { name: "ND7", coords: [-32.056398, 115.743697] },
-        { name: "ND17", coords: [-32.056170, 115.744484] },
-        { name: "ND16", coords: [-32.056361, 115.744278] },
-        { name: "ND39", coords: [-32.056303, 115.744539] },
-        { name: "ND14", coords: [-32.056700, 115.744718] },
-        { name: "ND34", coords: [-32.056378, 115.744604] },
-        { name: "ND12", coords: [-32.057019, 115.744567] },
-        { name: "ND35", coords: [-32.056104, 115.744543] },
-        { name: "ND38", coords: [-32.055920, 115.744392] },
-        { name: "ND21", coords: [-32.055780, 115.744328] },
+        { name: "ND11 ⚕️", coords: [-32.056378, 115.744105] },
+        { name: "ND12", coords: [-32.056166, 115.744211] },
+        { name: "ND13", coords: [-32.056086, 115.744326] },
+        { name: "ND14", coords: [-32.055995, 115.744386] },
+        { name: "ND15", coords: [-32.055955, 115.744386] },
+        { name: "ND16", coords: [-32.055760, 115.744467] },
+        { name: "ND17", coords: [-32.055635, 115.744331] },
         { name: "ND18", coords: [-32.055621, 115.744258] }
       ];
-
+      // Sort buildings by number in name
+      buildings.sort((a, b) => {
+        const numA = parseInt(a.name.match(/\d+/)?.[0] || 0, 10);
+        const numB = parseInt(b.name.match(/\d+/)?.[0] || 0, 10);
+        return numA - numB;
+      });
+      // Populate dropdown
       buildings.forEach(building => {
-        const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${building.coords[0]},${building.coords[1]}`;
-
-        const labelIcon = L.divIcon({ className: 'label-icon', html: building.name, iconSize: [60, 20], iconAnchor: [30, 10] });
-
-        L.marker(building.coords, { icon: labelIcon })
-          .addTo(map)
-          .bindPopup(`<strong>${building.name}</strong><br><a href="${streetViewUrl}" target="_blank">📷 View Street View</a>`);
-
         const option = document.createElement('option');
         option.value = JSON.stringify(building.coords);
-        option.text = building.name;
+        option.textContent = building.name;
         buildingSelect.appendChild(option);
       });
 
+      // Add building markers with labels and popup
+      buildings.forEach(building => {
+        const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${building.coords[0]},${building.coords[1]}`;
+        const labelIcon = L.divIcon({
+          className: 'label-icon',
+          html: building.name,
+          iconSize: [60, 20],
+          iconAnchor: [30, 10]
+        });
+        L.marker(building.coords, { icon: labelIcon })
+          .addTo(map)
+          .bindPopup(`<strong>${building.name}</strong><br><a href="${streetViewUrl}" target="_blank" rel="noopener noreferrer">📷 View Street View</a>`);
+      });
+
+      const pulseIcon = L.divIcon({
+        className: '',
+        html: '<div class="pulse-circle"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      let pulseMarker = null;
+
+      buildingSelect.addEventListener('change', () => {
+        const value = buildingSelect.value;
+        if (!value) return;
+        const coords = JSON.parse(value);
+        map.setView(coords, 18);
+
+        if (pulseMarker) {
+          map.removeLayer(pulseMarker);
+        }
+        pulseMarker = L.marker(coords, { icon: pulseIcon }).addTo(map);
+        setTimeout(() => {
+          if (pulseMarker) {
+            map.removeLayer(pulseMarker);
+            pulseMarker = null;
+          }
+        }, 3000);
+      });
+
+      // Live location marker setup
       let liveMarker = null;
-      const liveLocationIcon = L.divIcon({ className: 'live-location-marker' });
+      const liveLocationIcon = L.divIcon({
+        className: 'live-location-marker'
+      });
 
       function onLocationFound(e) {
         const latlng = e.latlng;
         if (!liveMarker) {
-          liveMarker = L.marker(latlng, { icon: liveLocationIcon }).addTo(map)
-            .bindPopup("You are here").openPopup();
+          liveMarker = L.marker(latlng, { icon: liveLocationIcon }).addTo(map);
         } else {
           liveMarker.setLatLng(latlng);
         }
       }
 
       function onLocationError(e) {
-        alert("Could not get your location. Make sure location services are enabled.");
+        console.log("Location error: " + e.message);
       }
 
-      map.locate({ watch: true, setView: false, maxZoom: 18 });
+      map.locate({ watch: true, setView: false, enableHighAccuracy: true });
       map.on('locationfound', onLocationFound);
       map.on('locationerror', onLocationError);
 
+      // Routing machine setup using OSRM demo server
+      let routingControl = null;
+
       buildingSelect.addEventListener('change', () => {
+        if (routingControl) {
+          routingControl.remove();
+          routingControl = null;
+        }
         const value = buildingSelect.value;
         if (!value) return;
-        const [lat, lng] = JSON.parse(value);
-        map.setView([lat, lng], 19);
+
+        if (!liveMarker) return;
+
+        const start = liveMarker.getLatLng();
+        const endCoords = JSON.parse(value);
+        const end = L.latLng(endCoords[0], endCoords[1]);
+
+        routingControl = L.Routing.control({
+          waypoints: [start, end],
+          router: L.Routing.osrmv1({
+            profile: 'foot',
+            // use the OSRM demo server; in prod use your own or a different backend for cutting through buildings
+          }),
+          lineOptions: {
+            styles: [{color: 'blue', opacity: 0.6, weight: 6}]
+          },
+          createMarker: function() { return null; },
+          addWaypoints: false,
+          routeWhileDragging: false,
+          fitSelectedRoutes: true,
+          showAlternatives: false,
+          collapsible: true,
+          autoRoute: true,
+          show: false,
+          useZoomParameter: true
+        }).addTo(map);
       });
     }
   </script>
