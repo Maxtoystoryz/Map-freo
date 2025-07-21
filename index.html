@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TAFE Map with Dropdown</title>
+  <title>TAFE Map with Dropdown + Live Tracking</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -10,21 +10,78 @@
     html, body { height: 100%; margin: 0; }
     #map { height: 100vh; display: none; }
 
-    /* Dropdown styles */
-    #buildingSelect {
-      width: 220px;
-      margin: 10px auto;
+    .label-icon {
+      background-color: #0078ff;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 1px solid #fff;
+      box-shadow: 0 0 3px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
+
+    .live-location-marker {
+      background: rgba(255, 0, 0, 0.8);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+    }
+
+    #passwordOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      flex-direction: column;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    #passwordOverlay input[type="password"] {
+      padding: 10px;
       font-size: 16px;
-      padding: 5px;
       border-radius: 5px;
-      border: 1px solid #ccc;
-      text-align-last: center;
-      display: none; /* hidden by default */
+      border: none;
+      margin-top: 10px;
+      width: 200px;
+      text-align: center;
+    }
+
+    #passwordOverlay button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      background-color: #0078ff;
+      color: white;
+      cursor: pointer;
+    }
+
+    #passwordError {
+      margin-top: 10px;
+      color: #ff6666;
+      height: 18px;
+    }
+
+    #buildingSelect {
+      display: none;
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
+      font-size: 16px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -45,7 +102,6 @@
 
   <script>
     const correctPassword = "lesgo2025";
-
     const passwordOverlay = document.getElementById('passwordOverlay');
     const passwordInput = document.getElementById('passwordInput');
     const passwordBtn = document.getElementById('passwordBtn');
@@ -53,9 +109,17 @@
     const mapDiv = document.getElementById('map');
     const buildingSelect = document.getElementById('buildingSelect');
 
+    const buildings = [
+      { name: "ND48", coords: [-32.054211, 115.744601] },
+      { name: "ND49", coords: [-32.054025, 115.743894] },
+      { name: "ND50", coords: [-32.054300, 115.743997] },
+      { name: "ND46", coords: [-32.054379, 115.743572] },
+      { name: "ND40", coords: [-32.054394, 115.743368] },
+      { name: "ND33", coords: [-32.055924, 115.742586] }
+    ];
+
     passwordBtn.addEventListener('click', () => {
-      const entered = passwordInput.value;
-      if (entered === correctPassword) {
+      if (passwordInput.value === correctPassword) {
         passwordOverlay.style.display = 'none';
         mapDiv.style.display = 'block';
         buildingSelect.style.display = 'block';
@@ -63,8 +127,11 @@
       } else {
         passwordError.textContent = "Incorrect password, please try again.";
         passwordInput.value = "";
-        passwordInput.focus();
       }
+    });
+
+    passwordInput.addEventListener('keyup', e => {
+      if (e.key === 'Enter') passwordBtn.click();
     });
 
     function initializeMap() {
@@ -73,55 +140,40 @@
       map.options.maxZoom = 22;
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data © OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      const buildings = [
-        { name: "ND48", coords: [-32.054211, 115.744601] },
-        { name: "ND49", coords: [-32.054025, 115.743894] },
-        { name: "ND50", coords: [-32.054300, 115.743997] },
-        { name: "ND46", coords: [-32.054379, 115.743572] }
-        // Add more as needed
-      ];
-
-      buildings.forEach((building, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = building.name;
-        buildingSelect.appendChild(option);
-
-        const labelIcon = L.divIcon({
-          className: 'label-icon',
-          html: building.name,
-          iconSize: [60, 20],
-          iconAnchor: [30, 10]
-        });
-
-        L.marker(building.coords, { icon: labelIcon })
-          .addTo(map)
-          .bindPopup(`<strong>${building.name}</strong>`);
-      });
-
-      buildingSelect.addEventListener('change', function () {
-        const selectedIndex = this.value;
-        if (selectedIndex !== "") {
-          const selectedBuilding = buildings[selectedIndex];
-          map.setView(selectedBuilding.coords, 20);
-        }
-      });
+      const liveLocationIcon = L.divIcon({ className: 'live-location-marker' });
+      let liveMarker = null;
 
       map.locate({ watch: true, setView: false, maxZoom: 18 });
+      map.on('locationfound', e => {
+        const latlng = e.latlng;
+        if (!liveMarker) {
+          liveMarker = L.marker(latlng, { icon: liveLocationIcon }).addTo(map).bindPopup("You are here").openPopup();
+        } else {
+          liveMarker.setLatLng(latlng);
+        }
+      });
+      map.on('locationerror', () => alert("Could not get your location."));
 
-      map.on('locationfound', (e) => {
-        const marker = L.marker(e.latlng).addTo(map);
-        marker.bindPopup("You are here").openPopup();
+      buildings.forEach(b => {
+        const labelIcon = L.divIcon({ className: 'label-icon', html: b.name });
+        L.marker(b.coords, { icon: labelIcon }).addTo(map);
+
+        const option = document.createElement('option');
+        option.value = `${b.coords[0]},${b.coords[1]}`;
+        option.textContent = b.name;
+        buildingSelect.appendChild(option);
       });
 
-      map.on('locationerror', () => {
-        alert("Could not get your location.");
+      buildingSelect.addEventListener('change', () => {
+        const val = buildingSelect.value;
+        if (!val) return;
+        const [lat, lng] = val.split(',').map(Number);
+        map.setView([lat, lng], 19);
       });
     }
   </script>
-
 </body>
 </html>
