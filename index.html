@@ -70,17 +70,22 @@
       color: #ff6666;
       height: 18px;
     }
- /* Dropdown styles */
-#buildingSelect {
-  width: 220px;
-  margin: 10px auto;
-  font-size: 16px;
-  padding: 5px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  text-align-last: center;
-  display: block; /* show when map shown */
-}
+
+    #buildingSelect {
+      width: 220px;
+      font-size: 16px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      text-align-last: center;
+      display: none;
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background-color: white;
+    }
   </style>
 </head>
 <body>
@@ -93,14 +98,13 @@
   </div>
 
   <select id="buildingSelect">
-  <option value="">Select a building</option>
-</select>
+    <option value="">Select a building</option>
+  </select>
 
   <div id="map"></div>
 
   <script>
     const correctPassword = "lesgo2025";
-
     const passwordOverlay = document.getElementById('passwordOverlay');
     const passwordInput = document.getElementById('passwordInput');
     const passwordBtn = document.getElementById('passwordBtn');
@@ -112,6 +116,7 @@
       if (entered === correctPassword) {
         passwordOverlay.style.display = 'none';
         mapDiv.style.display = 'block';
+        document.getElementById('buildingSelect').style.display = 'block';
         initializeMap();
       } else {
         passwordError.textContent = "Incorrect password, please try again.";
@@ -151,48 +156,19 @@
         { name: "ND33", coords: [-32.055924, 115.742586] },
         { name: "ND19", coords: [-32.055523, 115.742929] },
         { name: "ND31", coords: [-32.055333, 115.743174] },
-        { name: "Enzo’s ✂️", coords: [-32.055433, 115.743197] },
-        { name: "ND28 Gate ⛿", coords: [-32.055337, 115.743285] },
-        { name: "ND23 Gate ⛿", coords: [-32.055786, 115.743283] },
-        { name: "ND23", coords: [-32.055786, 115.743283] },
         { name: "ND1", coords: [-32.055995, 115.743470] },
         { name: "ND2", coords: [-32.056298, 115.743458] },
         { name: "ND3", coords: [-32.056561, 115.743707] },
         { name: "ND4", coords: [-32.056852, 115.743023] },
         { name: "ND6", coords: [-32.055877, 115.743509] },
         { name: "ND24", coords: [-32.056766, 115.743560] },
-        { name: "ND25", coords: [-32.056862, 115.743836] },
         { name: "ND22", coords: [-32.057232, 115.743791] },
-        { name: "Chapel ✝️", coords: [-32.056636, 115.743961] },
-        { name: "UP1 🅿️", coords: [-32.056888, 115.744055] },
-        { name: "UP2 🅿️", coords: [-32.057007, 115.743194] },
-        { name: "UP3 🅿️", coords: [-32.056646, 115.743212] },
-        { name: "UP4 🅿️", coords: [-32.055933, 115.742335] },
-        { name: "UP5 🅿️", coords: [-32.055860, 115.743190] },
-        { name: "UP7 🅿️", coords: [-32.054592, 115.743619] },
-        
-        // New Buildings
-        { name: "Batman Courtyard 🦇", coords: [-32.056481, 115.744092] },
-        { name: "ND9", coords: [-32.056670, 115.744142] },
-        { name: "ND10 Bathrooms 🚻", coords: [-32.056520, 115.744188] },
-        { name: "ND11", coords: [-32.056571, 115.744268] },
-        { name: "ND13", coords: [-32.056511, 115.744393] },
-        { name: "ND7", coords: [-32.056398, 115.743697] },
-        { name: "ND17", coords: [-32.056170, 115.744484] },
-        { name: "ND16", coords: [-32.056361, 115.744278] }, // converted from DMS
-        { name: "ND39", coords: [-32.056303, 115.744539] },
-        { name: "ND14", coords: [-32.056700, 115.744718] },
-        { name: "ND34", coords: [-32.056378, 115.744604] },
         { name: "ND12", coords: [-32.057019, 115.744567] },
-        { name: "ND35", coords: [-32.056104, 115.744543] },
-        { name: "ND38", coords: [-32.055920, 115.744392] },
-        { name: "ND21", coords: [-32.055780, 115.744328] },
-        { name: "ND18", coords: [-32.055621, 115.744258] }
+        { name: "ND10 Bathrooms 🚻", coords: [-32.056520, 115.744188] }
       ];
 
       buildings.forEach(building => {
         const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${building.coords[0]},${building.coords[1]}`;
-
         const labelIcon = L.divIcon({
           className: 'label-icon',
           html: building.name,
@@ -205,15 +181,27 @@
           .bindPopup(`<strong>${building.name}</strong><br><a href="${streetViewUrl}" target="_blank">📷 View Street View</a>`);
       });
 
-      let liveMarker = null;
-
-      const liveLocationIcon = L.divIcon({
-        className: 'live-location-marker'
+      const buildingSelect = document.getElementById('buildingSelect');
+      buildings.forEach(building => {
+        const option = document.createElement('option');
+        option.value = building.coords.join(',');
+        option.textContent = building.name;
+        buildingSelect.appendChild(option);
       });
+
+      buildingSelect.addEventListener('change', () => {
+        const selected = buildingSelect.value;
+        if (selected) {
+          const [lat, lng] = selected.split(',').map(Number);
+          map.setView([lat, lng], 20);
+        }
+      });
+
+      let liveMarker = null;
+      const liveLocationIcon = L.divIcon({ className: 'live-location-marker' });
 
       function onLocationFound(e) {
         const latlng = e.latlng;
-
         if (!liveMarker) {
           liveMarker = L.marker(latlng, { icon: liveLocationIcon }).addTo(map)
             .bindPopup("You are here").openPopup();
@@ -232,6 +220,6 @@
       map.on('locationerror', onLocationError);
     }
   </script>
-
 </body>
 </html>
+
