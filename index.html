@@ -166,6 +166,22 @@
         { name: "ND12", coords: [-32.057019, 115.744567] },
         { name: "ND10 Bathrooms 🚻", coords: [-32.056520, 115.744188] }
       ];
+      // After your buildings list
+const buildingSelect = document.getElementById('buildingSelect');
+buildings.forEach((building, index) => {
+  const option = document.createElement('option');
+  option.value = index;
+  option.textContent = building.name;
+  buildingSelect.appendChild(option);
+});
+
+buildingSelect.addEventListener('change', function () {
+  const selectedIndex = this.value;
+  if (selectedIndex !== "") {
+    const selectedBuilding = buildings[selectedIndex];
+    map.setView(selectedBuilding.coords, 20); // adjust zoom if needed
+  }
+});
 
       buildings.forEach(building => {
         const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${building.coords[0]},${building.coords[1]}`;
