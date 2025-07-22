@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>UNDA SHORTCUT</title>
+  <title>TAFE Map with Password + Live Tracking + Selector + Confetti</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -165,13 +165,19 @@
     }
 
     function initializeMap() {
-      const map = L.map('map').setView([-32.055, 115.7435], 16);
-      map.options.minZoom = 16;
+      const map = L.map('map').setView([-32.055, 115.7435], 17);
+      map.options.minZoom = 17;
       map.options.maxZoom = 22;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
+      L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri, DigitalGlobe, Earthstar Geographics',
+    maxZoom: 22,
+    detectRetina: true
+  }
+).addTo(map);
+
+
 
          const buildings = [
       { name: "ND48", coords: [-32.05406995747874, 115.7443606545727] },
