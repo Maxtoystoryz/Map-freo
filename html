@@ -1,0 +1,8 @@
+L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: '© <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 22,
+    tileSize: 512,
+    zoomOffset: -1,
+    id: 'mapbox/streets-v11', // or 'mapbox/satellite-v9' for satellite
+    accessToken: 'YOUR_MAPBOX_ACCESS_TOKEN'
+}).addTo(map);
