@@ -174,7 +174,7 @@
       });
       L.marker(building.coords, { icon: labelIcon })
         .addTo(map)
-        .bindPopup(`<strong>${building.name}</strong><br><a href="${streetViewUrl}" target="_blank" rel="noopener noreferrer">📷 View Street View</a>`);
+         .bindPopup(`<strong>${building.name}</strong>`)
     });
 
     const pulseIcon = L.divIcon({
