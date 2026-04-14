@@ -220,7 +220,10 @@
       const end = L.latLng(endCoords[0], endCoords[1]);
       routingControl = L.Routing.control({
         waypoints: [start,end],
-        router: L.Routing.osrmv1({ profile:'foot' }),
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
+          profile: 'foot'
+        }),
         lineOptions:{ styles:[{color:'blue', opacity:0.6, weight:6}] },
         createMarker: ()=>null,
         addWaypoints:false,
